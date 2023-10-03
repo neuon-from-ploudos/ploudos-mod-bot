@@ -44,7 +44,9 @@ impl EventHandler for Handler {
                 .create_interaction_response(&ctx.http, |response| {
                     response
                         .kind(InteractionResponseType::ChannelMessageWithSource)
-                        .interaction_response_data(|message| message.content(content.unwrap()))
+                        .interaction_response_data(|message| {
+                            message.content(content.unwrap()).ephemeral(true)
+                        })
                 })
                 .await
             {
@@ -64,8 +66,8 @@ impl EventHandler for Handler {
 
         let commands = Command::set_global_application_commands(&ctx.http, |commands| {
             commands
-            .create_application_command(|command| commands::ping::register(command))
-            .create_application_command(|command| commands::clear::register(command))
+                .create_application_command(|command| commands::ping::register(command))
+                .create_application_command(|command| commands::clear::register(command))
         })
         .await;
 
