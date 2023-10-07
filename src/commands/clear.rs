@@ -23,7 +23,7 @@ pub async fn run(ctx: &Context, cmd: &ApplicationCommandInteraction) -> serenity
     // Fetch the channel
     let channel_id = cmd.channel_id;
     let messages = channel_id
-        .messages(&ctx.http, |retriever| retriever.limit(count + 1)) // +1 to include the invoking command
+        .messages(&ctx.http, |retriever| retriever.limit(count))
         .await?;
 
     // Delete messages
