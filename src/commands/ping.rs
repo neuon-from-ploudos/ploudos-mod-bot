@@ -1,14 +1,15 @@
 use serenity::builder::CreateApplicationCommand;
 use serenity::model::application::interaction::application_command::ApplicationCommandInteraction;
-use serenity::model::prelude::interaction::application_command::CommandDataOption;
+use serenity::model::prelude::InteractionResponseType::ChannelMessageWithSource;
 use serenity::prelude::Context;
 
-pub async fn run(
-    _ctx: &Context,
-    _options: &[CommandDataOption],
-    _cmd: &ApplicationCommandInteraction,
-) -> serenity::Result<String> {
-    Ok("Hey, I'm alive!".to_string())
+pub async fn run(ctx: &Context, cmd: &ApplicationCommandInteraction) -> serenity::Result<()> {
+    cmd.create_interaction_response(&ctx.http, |resp| {
+        resp.kind(ChannelMessageWithSource)
+            .interaction_response_data(|data| data.content("Hey, I'm alive!"))
+    })
+    .await
+    .map(|_| ())
 }
 
 pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {

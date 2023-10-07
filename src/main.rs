@@ -1,7 +1,7 @@
 use std::env;
 
 use serenity::async_trait;
-use serenity::model::application::interaction::{Interaction, InteractionResponseType};
+use serenity::model::application::interaction::Interaction;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
 use serenity::model::prelude::command::Command;
@@ -32,25 +32,15 @@ impl EventHandler for Handler {
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::ApplicationCommand(command) = interaction {
-            println!("Received command interaction: {:#?}", command);
-
-            let content = match command.data.name.as_str() {
-                "ping" => commands::ping::run(&ctx, &command.data.options, &command).await,
-                "clear" => commands::clear::run(&ctx, &command.data.options, &command).await,
-                _ => Ok("not implemented :(".to_string()),
-            };
-
-            if let Err(why) = command
-                .create_interaction_response(&ctx.http, |response| {
-                    response
-                        .kind(InteractionResponseType::ChannelMessageWithSource)
-                        .interaction_response_data(|message| {
-                            message.content(content.unwrap()).ephemeral(true)
-                        })
-                })
-                .await
-            {
-                println!("Cannot respond to slash command: {}", why);
+            if let Err(err) = match command.data.name.as_str() {
+                "ping" => commands::ping::run(&ctx, &command).await,
+                "clear" => commands::clear::run(&ctx, &command).await,
+                _ => unreachable!(),
+            } {
+                println!(
+                    "Got an error while trying to process the command '{}': {}",
+                    command.data.name, err
+                )
             }
         }
     }
