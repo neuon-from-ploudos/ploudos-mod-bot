@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, process};
 
 use serenity::async_trait;
 use serenity::model::application::interaction::Interaction;
@@ -6,6 +6,7 @@ use serenity::model::channel::Message;
 use serenity::model::gateway::Ready;
 use serenity::model::prelude::command::Command;
 use serenity::prelude::*;
+use sqlx::sqlite::SqlitePoolOptions;
 
 mod commands;
 
@@ -35,6 +36,7 @@ impl EventHandler for Handler {
             if let Err(err) = match command.data.name.as_str() {
                 "ping" => commands::ping::run(&ctx, &command).await,
                 "clear" => commands::clear::run(&ctx, &command).await,
+                "faq" => commands::faq::run(&ctx, &command).await,
                 _ => unreachable!(),
             } {
                 println!(
@@ -56,8 +58,9 @@ impl EventHandler for Handler {
 
         let commands = Command::set_global_application_commands(&ctx.http, |commands| {
             commands
-                .create_application_command(|command| commands::ping::register(command))
-                .create_application_command(|command| commands::clear::register(command))
+                .create_application_command(commands::ping::register)
+                .create_application_command(commands::clear::register)
+                .create_application_command(commands::faq::register)
         })
         .await;
 
@@ -69,15 +72,12 @@ impl EventHandler for Handler {
 }
 
 #[tokio::main]
-async fn main() {
-    // Configure the client with your Discord bot token in the environment.
-    let token = match env::var("DISCORD_TOKEN") {
-        Ok(t) => t,
-        Err(_) => {
-            println!("ERR: Expected a token in the environment (DISCORD_TOKEN)");
-            return;
-        }
-    };
+async fn main() -> color_eyre::Result<()> {
+    // setup the database
+    let db = SqlitePoolOptions::new()
+        .connect(&env::var("DATABASE_URL")?)
+        .await?;
+    sqlx::migrate!().run(&db).await?;
 
     // Set gateway intents, which decides what events the bot will be notified about
     let intents = GatewayIntents::GUILD_MESSAGES
@@ -87,7 +87,7 @@ async fn main() {
     // Create a new instance of the Client, logging in as a bot. This will
     // automatically prepend your bot token with "Bot ", which is a requirement
     // by Discord for bot users.
-    let mut client = Client::builder(&token, intents)
+    let mut client = Client::builder(&env::var("DISCORD_TOKEN")?, intents)
         .event_handler(Handler)
         .await
         .expect("Err creating client");
@@ -99,4 +99,6 @@ async fn main() {
     if let Err(why) = client.start().await {
         println!("Client error: {:?}", why);
     }
+
+    Ok(())
 }
