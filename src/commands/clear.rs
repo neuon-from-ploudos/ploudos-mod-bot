@@ -1,3 +1,4 @@
+use poise::command;
 use serenity::builder::CreateApplicationCommand;
 use serenity::model::application::interaction::application_command::ApplicationCommandInteraction;
 use serenity::model::prelude::application_command::CommandDataOptionValue;
@@ -6,6 +7,8 @@ use serenity::model::prelude::interaction::MessageFlags;
 use serenity::model::prelude::InteractionResponseType::ChannelMessageWithSource;
 use serenity::model::prelude::MessageId;
 use serenity::prelude::Context;
+
+use crate::State;
 
 pub async fn run(ctx: &Context, cmd: &ApplicationCommandInteraction) -> serenity::Result<()> {
     let options = &cmd.data.options;
@@ -52,4 +55,35 @@ pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicatio
                 .max_int_value(100)
                 .required(true)
         })
+}
+
+/// Clear recent messages
+#[command(slash_command)]
+pub async fn clear<'a>(
+    ctx: poise::Context<'a, State, color_eyre::Report>,
+    #[description = "Number of messages to delete"]
+    #[min = 1]
+    #[max = 100]
+    count: u64,
+) -> color_eyre::Result<()> {
+    // Get the channel
+    let channel_id = ctx.channel_id();
+    let messages = channel_id
+        .messages(&ctx.http(), |retriever| retriever.limit(count))
+        .await?;
+
+    // Delete messages
+    let message_ids: Vec<MessageId> = messages.iter().map(|message| message.id).collect();
+    channel_id.delete_messages(&ctx.http(), message_ids).await?;
+
+    ctx.send(|resp| {
+        resp.ephemeral(true).content(format!(
+            "Deleted {} {}.",
+            count,
+            if count == 1 { "message" } else { "messages" }
+        ))
+    })
+    .await?;
+
+    Ok(())
 }
