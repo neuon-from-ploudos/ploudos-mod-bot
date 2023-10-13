@@ -1,3 +1,4 @@
+use color_eyre::eyre::Context;
 use poise::command;
 
 use crate::State;
@@ -31,7 +32,10 @@ pub async fn clear(
             if count == 1 { "message" } else { "messages" }
         ))
     })
-    .await?;
-
-    Ok(())
+    .await
+    .wrap_err(format!(
+        "Failed to respond to the command: {}",
+        ctx.command().name
+    ))
+    .map(|_| ())
 }
