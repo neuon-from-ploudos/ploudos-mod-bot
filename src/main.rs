@@ -1,28 +1,32 @@
+#[macro_use]
+extern crate lazy_static;
+
 use std::env;
 
 use color_eyre::eyre::WrapErr;
 use commands::clear;
 use commands::ping;
+use commands::tag;
 use poise::serenity_prelude as serenity;
+use poise::Context;
 use poise::Event;
 use serenity::prelude::GatewayIntents;
 
 mod commands;
 
-pub struct State;
+pub type Ctx<'a> = Context<'a, State, color_eyre::Report>;
 
-struct Handler;
+pub struct State;
 
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {
-
     // Set gateway intents, which decides what events the bot will be notified about
     let intents = GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::DIRECT_MESSAGES
         | GatewayIntents::MESSAGE_CONTENT;
 
     let options = poise::FrameworkOptions {
-        commands: vec![ping::ping(), clear::clear()],
+        commands: vec![ping::ping(), clear::clear(), tag::tag()],
         event_handler: |_ctx, event, _framework, _state| {
             Box::pin(event_handler(_ctx, event, _framework, _state))
         },
