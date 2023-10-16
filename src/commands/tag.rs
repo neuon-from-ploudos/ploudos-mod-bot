@@ -32,7 +32,7 @@ struct Tag<'a> {
 }
 
 /// Print a tag
-#[command(slash_command)]
+#[command(slash_command, user_cooldown = 5)]
 pub async fn tag(
     ctx: Ctx<'_>,
     #[description = "The tag's id"]
