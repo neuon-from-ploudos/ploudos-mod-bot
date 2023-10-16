@@ -1,5 +1,5 @@
 use poise::futures_util::StreamExt;
-use std::collections::HashMap;
+use std::{borrow::Cow, collections::HashMap};
 
 use color_eyre::eyre::Context;
 use poise::{command, serenity_prelude::User};
@@ -13,11 +13,8 @@ use crate::Ctx;
 lazy_static! {
     static ref TAGS: HashMap<&'static str, Tag<'static>> = {
         let mut map = HashMap::new();
-        let tags = vec![Tag {
-            id: "ploudos-closed",
-            title: "Why did PloudOS close?",
-            content: "PloudOS is closing because Erik, the creator of the project, found it unsustainable to manage alongside his job. Facing this difficult decision, Erik chose to prioritize his career. Consequently, PloudOS has ceased operations on September 30th at 11:30 pm (CEST). \n\n [See here for more information.](https://ploudos.com/ploudos-going-down/)",
-        }];
+        let json_tags = include_str!("../../tags.json");
+        let tags = serde_json::from_str::<Vec<Tag>>(json_tags).expect("Invalid tags.json");
         for tag in tags {
             map.insert(tag.id, tag);
         }
@@ -25,10 +22,11 @@ lazy_static! {
     };
 }
 
+#[derive(serde::Deserialize, serde::Serialize)]
 struct Tag<'a> {
     pub id: &'a str,
     pub title: &'a str,
-    pub content: &'a str,
+    pub content: Cow<'a, str>,
 }
 
 /// Print a tag
@@ -48,7 +46,7 @@ pub async fn tag(
                 embed
                     .color(Colour::new(0x008060))
                     .title(tag.title)
-                    .description(tag.content)
+                    .description(&tag.content)
             });
             if let Some(user) = user {
                 resp.content(
