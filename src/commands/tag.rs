@@ -1,13 +1,17 @@
+use poise::futures_util::StreamExt;
 use std::collections::HashMap;
 
 use color_eyre::eyre::Context;
 use poise::{command, serenity_prelude::User};
-use serenity::utils::{Colour, MessageBuilder};
+use serenity::{
+    futures::{self, Stream},
+    utils::{Colour, MessageBuilder},
+};
 
 use crate::Ctx;
 
 lazy_static! {
-    static ref TAGS: HashMap<String, Tag<'static>> = {
+    static ref TAGS: HashMap<&'static str, Tag<'static>> = {
         let mut map = HashMap::new();
         let tags = vec![Tag {
             id: "ploudos-closed",
@@ -15,7 +19,7 @@ lazy_static! {
             content: "",
         }];
         for tag in tags {
-            map.insert(tag.id.to_string(), tag);
+            map.insert(tag.id, tag);
         }
         map
     };
@@ -34,10 +38,11 @@ pub async fn tag(
     #[description = "The tag's id"]
     #[min = 1]
     #[max = 50]
+    #[autocomplete = "autocomplete_tag"]
     id: String,
     #[description = " The optional user the tag is meant for"] user: Option<User>,
 ) -> color_eyre::Result<()> {
-    if let Some(tag) = TAGS.get(&id) {
+    if let Some(tag) = TAGS.get(&(*id)) {
         ctx.send(|resp| {
             resp.embed(|embed| {
                 embed
@@ -66,4 +71,10 @@ pub async fn tag(
     }
     .wrap_err("Failed to respond to command")
     .map(|_| ())
+}
+
+async fn autocomplete_tag<'a>(_ctx: Ctx<'_>, partial: &'a str) -> impl Stream<Item = String> + 'a {
+    futures::stream::iter(TAGS.keys())
+        .filter(move |name| futures::future::ready(name.starts_with(partial)))
+        .map(|name| name.to_string())
 }
