@@ -13,7 +13,5 @@ serenity = { version = "0.11.6", default-features = false, features = [
   "model",
 ] }
 tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread"] }
-sqlx = { version = "0.7", features = ["runtime-tokio", "sqlite"] }
 color-eyre = "0.6.2"
-time = "0.3.29"
 poise = "0.5.6"

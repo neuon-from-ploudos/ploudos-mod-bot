@@ -6,7 +6,6 @@ use commands::ping;
 use poise::serenity_prelude as serenity;
 use poise::Event;
 use serenity::prelude::GatewayIntents;
-use sqlx::sqlite::SqlitePoolOptions;
 
 mod commands;
 
@@ -16,14 +15,6 @@ struct Handler;
 
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {
-    // setup the database
-    let db = SqlitePoolOptions::new()
-        .connect(
-            &env::var("DATABASE_URL")
-                .expect("Missing `DATABASE_URL` env var, see README for more information."),
-        )
-        .await?;
-    sqlx::migrate!().run(&db).await?;
 
     // Set gateway intents, which decides what events the bot will be notified about
     let intents = GatewayIntents::GUILD_MESSAGES
