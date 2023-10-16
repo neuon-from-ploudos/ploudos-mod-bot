@@ -16,7 +16,7 @@ lazy_static! {
         let tags = vec![Tag {
             id: "ploudos-closed",
             title: "Why did PloudOS close?",
-            content: "",
+            content: "PloudOS is closing because Erik, the creator of the project, found it unsustainable to manage alongside his job. Facing this difficult decision, Erik chose to prioritize his career. Consequently, PloudOS has ceased operations on September 30th at 11:30 pm (CEST). \n\n [See here for more information.](https://ploudos.com/ploudos-going-down/)",
         }];
         for tag in tags {
             map.insert(tag.id, tag);
