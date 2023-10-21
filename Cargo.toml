@@ -12,7 +12,7 @@ serenity = { version = "0.11.6", default-features = false, features = [
   "rustls_backend",
   "model",
 ] }
-tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread", "signal"] }
 color-eyre = "0.6.2"
 poise = "0.5.6"
 phf = "0.11"
