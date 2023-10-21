@@ -26,4 +26,5 @@ jobs:
       - uses: taiki-e/upload-rust-binary-action@v1
         with:
           bin: ploudos-mod-bot
+          checksum: sha256
           token: ${{ secrets.GITHUB_TOKEN }}
