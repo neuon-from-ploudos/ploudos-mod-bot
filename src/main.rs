@@ -30,7 +30,7 @@ async fn main() -> color_eyre::Result<()> {
         ..Default::default()
     };
 
-    poise::Framework::builder()
+    let framework = poise::Framework::builder()
         .token(
             env::var("DISCORD_TOKEN")
                 .expect("Missing `DISCORD_TOKEN` env var, see README for more information."),
@@ -44,9 +44,17 @@ async fn main() -> color_eyre::Result<()> {
         })
         .options(options)
         .intents(intents)
-        .run()
-        .await
-        .wrap_err("Failed to start the bot")
+        .build()
+        .await?;
+
+    let fw_clone = framework.clone();
+    tokio::spawn(async move {
+        tokio::signal::ctrl_c().await.unwrap();
+        println!("Shutting down");
+        fw_clone.shard_manager().lock().await.shutdown_all().await;
+    });
+
+    framework.start().await.wrap_err("Failed to start the bot")
 }
 
 async fn event_handler(
