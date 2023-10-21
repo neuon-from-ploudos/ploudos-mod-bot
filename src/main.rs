@@ -1,103 +1,74 @@
 use std::env;
+use std::time::Instant;
 
-use serenity::async_trait;
-use serenity::model::application::interaction::Interaction;
-use serenity::model::channel::Message;
-use serenity::model::gateway::Ready;
-use serenity::model::prelude::command::Command;
-use serenity::prelude::*;
+use color_eyre::eyre::WrapErr;
+use commands::clear;
+use commands::info;
+use commands::ping;
+use commands::tag;
+use poise::serenity_prelude as serenity;
+use poise::Context;
+use poise::Event;
+use serenity::prelude::GatewayIntents;
 
 mod commands;
 mod link_detection;
 
-struct Handler;
+pub type Ctx<'a> = Context<'a, State, color_eyre::Report>;
 
-#[async_trait]
-impl EventHandler for Handler {
-    // Set a handler for the `message` event - so that whenever a new message
-    // is received - the closure (or function) passed will be called.
-    //
-    // Event handlers are dispatched through a threadpool, and so multiple
-    // events can be dispatched simultaneously.
-    async fn message(&self, ctx: Context, msg: Message) {
-        if msg.content == "!ping" {
-            // Sending a message can fail, due to a network error, an
-            // authentication error, or lack of permissions to post in the
-            // channel, so log to stdout when some error happens, with a
-            // description of it.
-            if let Err(why) = msg.channel_id.say(&ctx.http, "Pong!").await {
-                println!("Error sending message: {:?}", why);
-            }
-        }
-    }
-
-    async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
-        if let Interaction::ApplicationCommand(command) = interaction {
-            if let Err(err) = match command.data.name.as_str() {
-                "ping" => commands::ping::run(&ctx, &command).await,
-                "clear" => commands::clear::run(&ctx, &command).await,
-                _ => unreachable!(),
-            } {
-                println!(
-                    "Got an error while trying to process the command '{}': {}",
-                    command.data.name, err
-                )
-            }
-        }
-    }
-
-    // Set a handler to be called on the `ready` event. This is called when a
-    // shard is booted, and a READY payload is sent by Discord. This payload
-    // contains data like the current user's guild Ids, current user data,
-    // private channels, and more.
-    //
-    // In this case, just print what the current user's username is.
-    async fn ready(&self, ctx: Context, ready: Ready) {
-        println!("{} is connected!", ready.user.name);
-
-        let commands = Command::set_global_application_commands(&ctx.http, |commands| {
-            commands
-                .create_application_command(|command| commands::ping::register(command))
-                .create_application_command(|command| commands::clear::register(command))
-        })
-        .await;
-
-        println!(
-            "I created the following global slash command: {:#?}",
-            commands
-        );
-    }
+pub struct State {
+    startup_time: Instant,
 }
 
 #[tokio::main]
-async fn main() {
-    // Configure the client with your Discord bot token in the environment.
-    let token = match env::var("DISCORD_TOKEN") {
-        Ok(t) => t,
-        Err(_) => {
-            println!("ERR: Expected a token in the environment (DISCORD_TOKEN)");
-            return;
-        }
-    };
-
+async fn main() -> color_eyre::Result<()> {
     // Set gateway intents, which decides what events the bot will be notified about
     let intents = GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::DIRECT_MESSAGES
         | GatewayIntents::MESSAGE_CONTENT;
 
-    // Create a new instance of the Client, logging in as a bot. This will
-    // automatically prepend your bot token with "Bot ", which is a requirement
-    // by Discord for bot users.
-    let mut client = Client::builder(&token, intents)
-        .event_handler(Handler)
-        .await
-        .expect("Err creating client");
+    let options = poise::FrameworkOptions {
+        commands: vec![ping::ping(), clear::clear(), tag::tag(), info::info()],
+        event_handler: |_ctx, event, _framework, _state| {
+            Box::pin(event_handler(_ctx, event, _framework, _state))
+        },
+        ..Default::default()
+    };
 
-    // Finally, start a single shard, and start listening to events.
-    //
-    // Shards will automatically attempt to reconnect, and will perform
-    // exponential backoff until it reconnects.
-    if let Err(why) = client.start().await {
-        println!("Client error: {:?}", why);
-    }
+    let framework = poise::Framework::builder()
+        .token(
+            env::var("DISCORD_TOKEN")
+                .expect("Missing `DISCORD_TOKEN` env var, see README for more information."),
+        )
+        .setup(move |ctx, _ready, framework| {
+            Box::pin(async move {
+                println!("Logged in as {}", _ready.user.name);
+                poise::builtins::register_globally(ctx, &framework.options().commands).await?;
+                Ok(State {
+                    startup_time: Instant::now(),
+                })
+            })
+        })
+        .options(options)
+        .intents(intents)
+        .build()
+        .await?;
+
+    let fw_clone = framework.clone();
+    tokio::spawn(async move {
+        tokio::signal::ctrl_c().await.unwrap();
+        println!("Shutting down");
+        fw_clone.shard_manager().lock().await.shutdown_all().await;
+    });
+
+    framework.start().await.wrap_err("Failed to start the bot")
+}
+
+async fn event_handler(
+    _ctx: &serenity::Context,
+    _event: &Event<'_>,
+    _framework: poise::FrameworkContext<'_, State, color_eyre::Report>,
+    _data: &State,
+) -> color_eyre::Result<()> {
+    Ok(())
 }
