@@ -8,6 +8,7 @@ use serenity::model::prelude::command::Command;
 use serenity::prelude::*;
 
 mod commands;
+mod link_detection;
 
 struct Handler;
 
