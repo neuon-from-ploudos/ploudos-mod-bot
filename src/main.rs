@@ -1,7 +1,9 @@
 use std::env;
+use std::time::Instant;
 
 use color_eyre::eyre::WrapErr;
 use commands::clear;
+use commands::info;
 use commands::ping;
 use commands::tag;
 use poise::serenity_prelude as serenity;
@@ -13,7 +15,9 @@ mod commands;
 
 pub type Ctx<'a> = Context<'a, State, color_eyre::Report>;
 
-pub struct State;
+pub struct State {
+    startup_time: Instant,
+}
 
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {
@@ -23,7 +27,7 @@ async fn main() -> color_eyre::Result<()> {
         | GatewayIntents::MESSAGE_CONTENT;
 
     let options = poise::FrameworkOptions {
-        commands: vec![ping::ping(), clear::clear(), tag::tag()],
+        commands: vec![ping::ping(), clear::clear(), tag::tag(), info::info()],
         event_handler: |_ctx, event, _framework, _state| {
             Box::pin(event_handler(_ctx, event, _framework, _state))
         },
@@ -39,7 +43,9 @@ async fn main() -> color_eyre::Result<()> {
             Box::pin(async move {
                 println!("Logged in as {}", _ready.user.name);
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                Ok(State)
+                Ok(State {
+                    startup_time: Instant::now(),
+                })
             })
         })
         .options(options)
