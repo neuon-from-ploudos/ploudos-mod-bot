@@ -1,8 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
-pub fn is_url_bad(char_map: &HashMap<char, char>, tokens: &HashSet<String>, url: &String) -> bool {
+pub fn is_url_bad(char_map: &HashMap<char, char>, tokens: &HashSet<String>, url: &str) -> bool {
     let url = tokenize(char_map, url);
-    let url_comps: Vec<&str> = url.split(" ").collect();
+    let url_comps: Vec<&str> = url.split(' ').collect();
     let url_comps = &url_comps[0..url_comps.len() - 1];
 
     for tk in tokens {
@@ -16,7 +16,7 @@ pub fn is_url_bad(char_map: &HashMap<char, char>, tokens: &HashSet<String>, url:
         }
     }
 
-    return false;
+    false
 }
 
 fn make_index(words: &Vec<String>, char_map: &HashMap<char, char>) -> HashSet<String> {
@@ -43,7 +43,7 @@ fn make_index(words: &Vec<String>, char_map: &HashMap<char, char>) -> HashSet<St
     two_tks
 }
 
-fn tokenize(char_map: &HashMap<char, char>, w: &String) -> String {
+fn tokenize(char_map: &HashMap<char, char>, w: &str) -> String {
     let mut new_w = String::new();
     let mut prev_c = '\0';
 
@@ -128,5 +128,5 @@ pub fn setup() -> (HashSet<std::string::String>, HashMap<char, char>) {
         '9' => ' '
     };
 
-    return (make_index(&words, &char_map), char_map);
+    (make_index(&words, &char_map), char_map)
 }
