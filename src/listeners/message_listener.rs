@@ -12,8 +12,7 @@ use crate::link_validation::link_detection::setup;
 use crate::State;
 
 static URL_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"https?:\/\/.*?[ $\/]").unwrap());
-static LINK_DETECT: Lazy<(HashSet<std::string::String>, HashMap<char, char>)> =
-    Lazy::new(setup);
+static LINK_DETECT: Lazy<(HashSet<std::string::String>, HashMap<char, char>)> = Lazy::new(setup);
 
 pub async fn message_listener(
     ctx: &serenity::Context,
@@ -22,19 +21,19 @@ pub async fn message_listener(
     _data: &State,
 ) -> Result<(), Error> {
     if let Event::Message { new_message } = event {
-            let (tks, char_map) = (&LINK_DETECT.0, &LINK_DETECT.1);
+        let (tks, char_map) = (&LINK_DETECT.0, &LINK_DETECT.1);
 
-            let text = &new_message.content;
+        let text = &new_message.content;
 
-            let urls: Vec<&str> = URL_REGEX.find_iter(text).map(|m| m.as_str()).collect();
+        let urls: Vec<&str> = URL_REGEX.find_iter(text).map(|m| m.as_str()).collect();
 
-            if !urls.is_empty() && !new_message.is_own(ctx) {
-                let urls: Vec<(&str, bool)> = urls
-                    .iter()
-                    .map(|&url| (url, is_url_bad(char_map, tks, url)))
-                    .collect();
-                new_message.reply(ctx, format!("URLS: {:#?}", urls)).await?;
-            }
+        if !urls.is_empty() && !new_message.is_own(ctx) {
+            let urls: Vec<(&str, bool)> = urls
+                .iter()
+                .map(|&url| (url, is_url_bad(char_map, tks, url)))
+                .collect();
+            new_message.reply(ctx, format!("URLS: {:#?}", urls)).await?;
+        }
     }
     Ok(())
 }
