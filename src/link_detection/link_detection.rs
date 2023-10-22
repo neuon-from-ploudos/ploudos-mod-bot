@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 pub fn is_url_bad(char_map: &HashMap<char, char>, tokens: &HashSet<String>, url: &String) -> bool {
     let url = tokenize(char_map, url);
     let url_comps: Vec<&str> = url.split(" ").collect();
-    let url_comps = &url_comps[0..url_comps.len()-1];
+    let url_comps = &url_comps[0..url_comps.len() - 1];
 
     for tk in tokens {
         for &c in url_comps {
@@ -131,7 +131,6 @@ pub fn setup() -> (HashSet<std::string::String>, HashMap<char, char>) {
     return (make_index(&words, &char_map), char_map);
 }
 
-
 #[cfg(test)]
 mod test {
     use std::{
@@ -216,7 +215,7 @@ mod test {
 
     #[test]
     fn test_url() {
-        let (tks, char_map) = setup();        
+        let (tks, char_map) = setup();
         assert_eq!(tks.len(), 506);
 
         let file = File::open("/home/me/projects/ploudos/bot/ploudos-mod-bot/links.txt").unwrap();
@@ -242,7 +241,7 @@ mod test {
 
     #[test]
     fn test_detection() {
-        let (tks, char_map) = setup();        
+        let (tks, char_map) = setup();
         // assert_eq!(tks.len(), 506);
 
         // plain link
@@ -250,8 +249,16 @@ mod test {
         // some letter changes (no distance)
         assert!(is_url_bad(&char_map, &tks, &"d1scord.com".to_string()));
         // same letter repeated (no distance)
-        assert!(is_url_bad(&char_map, &tks, &"daaaaaaaaaaaaaaaaaaaascord.com".to_string()));
+        assert!(is_url_bad(
+            &char_map,
+            &tks,
+            &"daaaaaaaaaaaaaaaaaaaascord.com".to_string()
+        ));
         // random string (should not be detected)
-        assert!(!is_url_bad(&char_map, &tks, &"arakfksdlfbwui.com".to_string()));
+        assert!(!is_url_bad(
+            &char_map,
+            &tks,
+            &"arakfksdlfbwui.com".to_string()
+        ));
     }
 }
