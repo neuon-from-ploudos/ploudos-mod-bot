@@ -59,6 +59,79 @@ fn tokenize(char_map: &HashMap<char, char>, w: &String) -> String {
     new_w
 }
 
+macro_rules! char_map {
+    ($($key:expr => $value:expr),*) => {
+        {
+            // can this be generalized?
+            let mut map = HashMap::<char, char>::new();
+            $(
+                map.insert($key, $value);
+            )*
+            map
+        }
+    };
+}
+
+pub fn setup() -> (HashSet<std::string::String>, HashMap<char, char>) {
+    let words = vec![
+        "discord".to_string(),
+        "steam".to_string(),
+        "steamcommunity".to_string(),
+        "steampowered".to_string(),
+        "free".to_string(),
+        "gift".to_string(),
+        "cs".to_string(),
+        "csgo".to_string(),
+        "game".to_string(),
+        "twitch".to_string(),
+        "academy".to_string(),
+        "reward".to_string(),
+        "captcha".to_string(),
+        "tech".to_string(),
+        "account".to_string(),
+        "nitro".to_string(),
+        "pubg".to_string(),
+        "coin".to_string(),
+        "event".to_string(),
+        "wallet".to_string(),
+        "roblox".to_string(),
+        "hypixel".to_string(),
+    ];
+
+    let char_map = char_map! {
+        'a' => 'a',
+        'o' => 'a',
+        '0' => 'a',
+        'e' => 'a',
+        'i' => 'i',
+        'l' => 'i',
+        'j' => 'i',
+        '1' => 'i',
+        'u' => 'u',
+        'v' => 'u',
+        'w' => 'u',
+        'm' => 'm',
+        'n' => 'm',
+        'd' => 'd',
+        'b' => 'd',
+        't' => 'r',
+        '-' => ' ',
+        '_' => ' ',
+        '.' => ' ',
+        '2' => ' ',
+        '3' => ' ',
+        '4' => ' ',
+        '5' => ' ',
+        '6' => ' ',
+        '7' => ' ',
+        '8' => ' ',
+        '9' => ' '
+    };
+
+    return (make_index(&words, &char_map), char_map);
+}
+
+
 #[cfg(test)]
 mod test {
     use std::{
