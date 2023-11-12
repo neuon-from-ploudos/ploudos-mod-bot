@@ -6,7 +6,6 @@ use commands::clear;
 use commands::info;
 use commands::ping;
 use commands::tag;
-use listeners::message_listener::message_listener;
 use poise::serenity_prelude as serenity;
 use poise::Context;
 use serenity::prelude::GatewayIntents;
@@ -31,7 +30,7 @@ async fn main() -> color_eyre::Result<()> {
     let options = poise::FrameworkOptions {
         commands: vec![ping::ping(), clear::clear(), tag::tag(), info::info()],
         event_handler: |_ctx, event, _framework, _state| {
-            Box::pin(message_listener(_ctx, event, _framework, _state))
+            Box::pin(listeners::event_listener(_ctx, event, _framework, _state))
         },
         ..Default::default()
     };

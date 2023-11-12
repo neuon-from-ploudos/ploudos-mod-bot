@@ -14,7 +14,7 @@ use crate::State;
 static URL_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"https?:\/\/.*?[ $\/]").unwrap());
 static LINK_DETECT: Lazy<(HashSet<std::string::String>, HashMap<char, char>)> = Lazy::new(setup);
 
-pub async fn message_listener(
+pub async fn link_detection_listener(
     ctx: &serenity::Context,
     event: &Event<'_>,
     _framework: poise::FrameworkContext<'_, State, Error>,
