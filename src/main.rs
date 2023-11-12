@@ -4,10 +4,12 @@ use std::time::Instant;
 use color_eyre::eyre::WrapErr;
 use commands::clear;
 use commands::info;
+use commands::mcstatus;
 use commands::ping;
 use commands::tag;
 use poise::serenity_prelude as serenity;
 use poise::Context;
+use poise::PrefixFrameworkOptions;
 use serenity::prelude::GatewayIntents;
 
 mod commands;
@@ -28,9 +30,19 @@ async fn main() -> color_eyre::Result<()> {
         | GatewayIntents::MESSAGE_CONTENT;
 
     let options = poise::FrameworkOptions {
-        commands: vec![ping::ping(), clear::clear(), tag::tag(), info::info()],
+        commands: vec![
+            ping::ping(),
+            clear::clear(),
+            tag::tag(),
+            info::info(),
+            mcstatus::mcstatus(),
+        ],
         event_handler: |ctx, event, framework, state| {
             Box::pin(listeners::event_listener(ctx, event, framework, state))
+        },
+        prefix_options: PrefixFrameworkOptions {
+            prefix: Some("/".into()),
+            ..Default::default()
         },
         ..Default::default()
     };
