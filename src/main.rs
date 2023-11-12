@@ -29,8 +29,8 @@ async fn main() -> color_eyre::Result<()> {
 
     let options = poise::FrameworkOptions {
         commands: vec![ping::ping(), clear::clear(), tag::tag(), info::info()],
-        event_handler: |_ctx, event, _framework, _state| {
-            Box::pin(listeners::event_listener(_ctx, event, _framework, _state))
+        event_handler: |ctx, event, framework, state| {
+            Box::pin(listeners::event_listener(ctx, event, framework, state))
         },
         ..Default::default()
     };
