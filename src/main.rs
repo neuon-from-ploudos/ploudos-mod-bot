@@ -11,7 +11,7 @@ use poise::Context;
 use serenity::prelude::GatewayIntents;
 
 mod commands;
-mod link_validation;
+// mod link_validation;
 mod listeners;
 
 pub type Ctx<'a> = Context<'a, State, color_eyre::Report>;
