@@ -1,5 +1,6 @@
 use color_eyre::eyre::Context;
-use poise::command;
+use poise::{command, CreateReply};
+use serenity::builder::GetMessages;
 
 use crate::State;
 
@@ -18,20 +19,18 @@ pub async fn clear(
 ) -> color_eyre::Result<()> {
     let channel_id = ctx.channel_id();
     let messages = channel_id
-        .messages(&ctx.http(), |retriever| retriever.limit(count))
+        .messages(&ctx.http(), GetMessages::new().limit(count as u8))
         .await?
         .iter()
         .map(|msg| msg.id)
         .collect::<Vec<_>>();
     channel_id.delete_messages(&ctx.http(), messages).await?;
 
-    ctx.send(|resp| {
-        resp.ephemeral(true).content(format!(
-            "Deleted {} {}.",
-            count,
-            if count == 1 { "message" } else { "messages" }
-        ))
-    })
+    ctx.send(CreateReply::default().ephemeral(true).content(format!(
+        "Deleted {} {}.",
+        count,
+        if count == 1 { "message" } else { "messages" }
+    )))
     .await
     .wrap_err(format!(
         "Failed to respond to the command: {}",
