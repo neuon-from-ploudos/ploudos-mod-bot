@@ -1,6 +1,7 @@
 use std::env;
 use std::time::Instant;
 
+use ::serenity::client::ClientBuilder;
 use color_eyre::eyre::WrapErr;
 use commands::clear;
 use commands::info;
@@ -48,10 +49,6 @@ async fn main() -> color_eyre::Result<()> {
     };
 
     let framework = poise::Framework::builder()
-        .token(
-            env::var("DISCORD_TOKEN")
-                .expect("Missing `DISCORD_TOKEN` env var, see README for more information."),
-        )
         .setup(move |ctx, _ready, framework| {
             Box::pin(async move {
                 println!("Logged in as {}", _ready.user.name);
@@ -62,16 +59,24 @@ async fn main() -> color_eyre::Result<()> {
             })
         })
         .options(options)
-        .intents(intents)
-        .build()
-        .await?;
+        .build();
 
-    let fw_clone = framework.clone();
+    let sm_clone = framework.shard_manager().clone();
     tokio::spawn(async move {
         tokio::signal::ctrl_c().await.unwrap();
         println!("Shutting down");
-        fw_clone.shard_manager().lock().await.shutdown_all().await;
+        sm_clone.shutdown_all().await;
     });
 
-    framework.start().await.wrap_err("Failed to start the bot")
+    ClientBuilder::new(
+        env::var("DISCORD_TOKEN")
+            .expect("Missing `DISCORD_TOKEN` env var, see README for more information."),
+        intents,
+    )
+    .framework(framework)
+    .await
+    .expect("Failed to start the bot")
+    .start()
+    .await
+    .wrap_err("Failed to start the bot")
 }
