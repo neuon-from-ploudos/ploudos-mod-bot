@@ -1,29 +1,32 @@
-use std::env;
 use std::time::Instant;
 
-use color_eyre::eyre::WrapErr;
+use anyhow::Context as _;
 use commands::clear;
 use commands::info;
 use commands::mcstatus;
 use commands::ping;
 use commands::tag;
-use poise::serenity_prelude as serenity;
+use poise::serenity_prelude::{ClientBuilder, GatewayIntents};
 use poise::Context;
 use poise::PrefixFrameworkOptions;
-use serenity::prelude::GatewayIntents;
 
 mod commands;
-// mod link_validation;
-mod listeners;
 
-pub type Ctx<'a> = Context<'a, State, color_eyre::Report>;
+type Error = anyhow::Error;
+pub type Ctx<'a> = Context<'a, State, Error>;
 
 pub struct State {
     startup_time: Instant,
 }
 
-#[tokio::main]
-async fn main() -> color_eyre::Result<()> {
+#[shuttle_runtime::main]
+async fn main(
+    #[shuttle_runtime::Secrets] secrets: shuttle_runtime::SecretStore,
+) -> shuttle_serenity::ShuttleSerenity {
+    let discord_token = secrets
+        .get("DISCORD_TOKEN")
+        .context("'DISCORD_TOKEN' was not found")?;
+
     // Set gateway intents, which decides what events the bot will be notified about
     let intents = GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::DIRECT_MESSAGES
@@ -37,9 +40,6 @@ async fn main() -> color_eyre::Result<()> {
             info::info(),
             mcstatus::mcstatus(),
         ],
-        event_handler: |ctx, event, framework, state| {
-            Box::pin(listeners::event_listener(ctx, event, framework, state))
-        },
         prefix_options: PrefixFrameworkOptions {
             prefix: Some("/".into()),
             ..Default::default()
@@ -48,13 +48,9 @@ async fn main() -> color_eyre::Result<()> {
     };
 
     let framework = poise::Framework::builder()
-        .token(
-            env::var("DISCORD_TOKEN")
-                .expect("Missing `DISCORD_TOKEN` env var, see README for more information."),
-        )
-        .setup(move |ctx, _ready, framework| {
+        .setup(move |ctx, ready, framework| {
             Box::pin(async move {
-                println!("Logged in as {}", _ready.user.name);
+                println!("Logged in as {}", ready.user.name);
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 Ok(State {
                     startup_time: Instant::now(),
@@ -62,16 +58,12 @@ async fn main() -> color_eyre::Result<()> {
             })
         })
         .options(options)
-        .intents(intents)
-        .build()
-        .await?;
+        .build();
 
-    let fw_clone = framework.clone();
-    tokio::spawn(async move {
-        tokio::signal::ctrl_c().await.unwrap();
-        println!("Shutting down");
-        fw_clone.shard_manager().lock().await.shutdown_all().await;
-    });
+    let client = ClientBuilder::new(discord_token, intents)
+        .framework(framework)
+        .await
+        .map_err(shuttle_runtime::CustomError::new)?;
 
-    framework.start().await.wrap_err("Failed to start the bot")
+    Ok(client.into())
 }

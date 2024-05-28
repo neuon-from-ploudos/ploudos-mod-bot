@@ -1,7 +1,6 @@
-use color_eyre::eyre::Context;
-use poise::command;
-
-use crate::State;
+use anyhow::Context;
+use poise::{command, CreateReply};
+use serenity::all::GetMessages;
 
 /// Clear recent messages
 #[command(
@@ -10,32 +9,27 @@ use crate::State;
     default_member_permissions = "MANAGE_MESSAGES"
 )]
 pub async fn clear(
-    ctx: poise::Context<'_, State, color_eyre::Report>,
+    ctx: crate::Ctx<'_>,
     #[description = "Number of messages to delete"]
     #[min = 1]
     #[max = 100]
     count: u64,
-) -> color_eyre::Result<()> {
+) -> Result<(), crate::Error> {
     let channel_id = ctx.channel_id();
     let messages = channel_id
-        .messages(&ctx.http(), |retriever| retriever.limit(count))
+        .messages(&ctx.http(), GetMessages::new().limit(count as u8))
         .await?
         .iter()
         .map(|msg| msg.id)
         .collect::<Vec<_>>();
     channel_id.delete_messages(&ctx.http(), messages).await?;
 
-    ctx.send(|resp| {
-        resp.ephemeral(true).content(format!(
-            "Deleted {} {}.",
-            count,
-            if count == 1 { "message" } else { "messages" }
-        ))
-    })
+    ctx.send(CreateReply::default().ephemeral(true).content(format!(
+        "Deleted {} {}.",
+        count,
+        if count == 1 { "message" } else { "messages" }
+    )))
     .await
-    .wrap_err(format!(
-        "Failed to respond to the command: {}",
-        ctx.command().name
-    ))
+    .context("Failed to respond to `clear` command")
     .map(|_| ())
 }
