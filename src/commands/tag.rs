@@ -1,10 +1,11 @@
-use poise::futures_util::StreamExt;
+use anyhow::Context;
+use poise::{futures_util::StreamExt, CreateReply};
 
-use color_eyre::eyre::Context;
 use poise::{command, serenity_prelude::User};
 use serenity::{
+    all::{Colour, CreateEmbed},
     futures::{self, Stream},
-    utils::{Colour, MessageBuilder},
+    utils::MessageBuilder,
 };
 
 use crate::Ctx;
@@ -28,35 +29,34 @@ pub async fn tag(
     #[autocomplete = "autocomplete_tag"]
     id: String,
     #[description = " The optional user the tag is meant for"] user: Option<User>,
-) -> color_eyre::Result<()> {
+) -> Result<(), crate::Error> {
     if let Some(tag) = tags::TAGS.get(&(*id)) {
-        ctx.send(|resp| {
-            resp.embed(|embed| {
-                embed
-                    .color(Colour::new(0x008060))
-                    .title(tag.title)
-                    .description(tag.content)
-            });
-            if let Some(user) = user {
-                resp.content(
-                    MessageBuilder::new()
-                        .push("Hey ")
-                        .mention(&user)
-                        .push(", please have a look at the following article:")
-                        .build(),
-                );
-            };
-            resp
-        })
-        .await
+        let embed = CreateEmbed::default()
+            .color(Colour::new(0x008060))
+            .title(tag.title)
+            .description(tag.content);
+        let reply = CreateReply::default().embed(embed);
+        let reply = if let Some(user) = user {
+            reply.content(
+                MessageBuilder::new()
+                    .push("Hey ")
+                    .mention(&user)
+                    .push(", please have a look at the following article:")
+                    .build(),
+            )
+        } else {
+            reply
+        };
+        ctx.send(reply).await
     } else {
-        ctx.send(|resp| {
-            resp.ephemeral(true)
-                .content(format!("The tag with the id _{}_ does not exist.", &id))
-        })
+        ctx.send(
+            CreateReply::default()
+                .ephemeral(true)
+                .content(format!("The tag with the id _{}_ does not exist.", &id)),
+        )
         .await
     }
-    .wrap_err("Failed to respond to command")
+    .context("Failed to respond to `tag` command")
     .map(|_| ())
 }
 

@@ -1,10 +1,5 @@
-use crate::State;
-
-/// The ping command
 #[poise::command(prefix_command)]
-pub async fn mcstatus(
-    ctx: poise::Context<'_, State, color_eyre::Report>,
-) -> color_eyre::Result<()> {
+pub async fn mcstatus(ctx: crate::Ctx<'_>) -> Result<(), crate::Error> {
     ctx.say(
         r#"
 Ayo, what you think you're doing with this command?
