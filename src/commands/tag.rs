@@ -35,18 +35,16 @@ pub async fn tag(
             .color(Colour::new(0x008060))
             .title(tag.title)
             .description(tag.content);
-        let reply = CreateReply::default().embed(embed);
-        let reply = if let Some(user) = user {
-            reply.content(
+        let mut reply = CreateReply::default().embed(embed);
+        if let Some(user) = user {
+            reply = reply.content(
                 MessageBuilder::new()
                     .push("Hey ")
                     .mention(&user)
                     .push(", please have a look at the following article:")
                     .build(),
             )
-        } else {
-            reply
-        };
+        }
         ctx.send(reply).await
     } else {
         ctx.send(
