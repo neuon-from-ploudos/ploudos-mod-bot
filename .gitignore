@@ -4,3 +4,5 @@ Cargo.lock
 
 links.txt
 Secrets.toml
+.shuttle*
+Secrets*.toml
